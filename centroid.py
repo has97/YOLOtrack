@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 
 class CentroidTracker():
-	def __init__(self, maxDisappeared=50):
+	def __init__(self, maxDisappeared=45):
 
 		self.nextObjectID = 0 # unique object id
 		self.objects = OrderedDict()# mapping of object id to centroid
