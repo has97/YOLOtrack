@@ -3,33 +3,33 @@ from collections import OrderedDict
 import numpy as np
 
 class CentroidTracker():
-	def __init__(self, maxDisappeared=45):
+	def __init__(self, maxdisapp=45):
 
-		self.nextObjectID = 0 # unique object id
-		self.objects = OrderedDict()# mapping of object id to centroid
-		self.disappeared = OrderedDict() # number of times a particular object is marked as disappeared from the frame
-		self.maxDisappeared = maxDisappeared # maximum number of times an object can be marked as disappeared
+		self.nextOBID = 0 # unique object id
+		self.objecdict = OrderedDict()# mapping of object id to centroid
+		self.disapp = OrderedDict() # number of times a particular object is marked as disapp from the frame
+		self.maxdisapp = maxdisapp # maximum number of times an object can be marked as disapp
 
-	def register(self, centroid):
-		self.objects[self.nextObjectID] = centroid # registering the object with its centroid 
-		self.disappeared[self.nextObjectID] = 0 # initializing the disappeared variable of object as zero
-		self.nextObjectID += 1 # updating next object_id for the next object
+	def registering(self, centroid):
+		self.nextOBID += 1 # updating next object_id for the next object
+		self.disapp[self.nextOBID] = 0 # initializing the disapp variable of object as zero
+		self.objecdict[self.nextOBID] = centroid # registering the object with its centroid 
 
-	def deregister(self, objectID):
-		del self.objects[objectID] # deleting the object from mapping list for deregistering
-		del self.disappeared[objectID] # deleting the object from disappearing list for deregistering
+	def deregistering(self, objectID):
+		del self.objecdict[objectID] # deleting the object from mapping list for deregistering
+		del self.disapp[objectID] # deleting the object from disappearing list for deregistering
 
 	def update(self, rects):
 
 		if len(rects) == 0: # no detection
 		
-			for objectID in self.disappeared.keys(): #marking the tracked object as disappeared by incrementing
-				self.disappeared[objectID] += 1
+			for objectID in self.disapp.keys(): #marking the tracked object as disapp by incrementing
+				self.disapp[objectID] += 1
 
-				if self.disappeared[objectID] > self.maxDisappeared: # deregister the object because it went beyond the threshold
-					self.deregister(objectID)
+				if self.disapp[objectID] > self.maxdisapp: # deregister the object because it went beyond the threshold
+					self.deregistering(objectID)
 
-			return self.objects
+			return self.objecdict
 
 		# This holds the centroids of the detections
 		inputCentroids = np.zeros((len(rects), 2), dtype="int")
@@ -40,59 +40,59 @@ class CentroidTracker():
 			cY = int((startY + endY) / 2.0)
 			inputCentroids[i] = (cX, cY) # centroid of rectangle
 
-		if len(self.objects) == 0: # no objects are registered yet
+		if len(self.objecdict) == 0: # no objecdict are registered yet
 			for i in range(0, len(inputCentroids)):
-				self.register(inputCentroids[i])
+				self.registering(inputCentroids[i])
 
-		else:  # objects are registered 
+		else:  # objecdict are registered 
 			
-			objectIDs = list(self.objects.keys()) # object id list
-			objectCentroids = list(self.objects.values()) # object centroid list
+			objectIDs = list(self.objecdict.keys()) # object id list
+			objectCentroids = list(self.objecdict.values()) # object centroid list
 
-			D = dist.cdist(np.array(objectCentroids), inputCentroids)# matrix with pair wise distance of object and input centroid
+			Distance = dist.cdist(np.array(objectCentroids), inputCentroids)# matrix with pair wise distance of object and input centroid
 
 			# obtaining the minimum value along the row and then sort this values
-			rows = D.min(axis=1).argsort()
+			rows = Distance.min(axis=1).argsort()
 
 			# next, we perform a similar process on the columns by using previously computed row index
-			cols = D.argmin(axis=1)[rows]
+			cols = Distance.argmin(axis=1)[rows]
 
 			# this is to update the object : either registering, update or deregistering
-			usedRows = set()
-			usedCols = set()
+			usedObjectRow = set()
+			usedObjectCols = set()
 
 	
 			for (row, col) in zip(rows, cols):
 				
-				if row in usedRows or col in usedCols: #multiple detection for an object
+				if row in usedObjectRow or col in usedObjectCols: #multiple detection for an object
 					continue
 
 				objectID = objectIDs[row] # assigning object id to that centroid
-				self.objects[objectID] = inputCentroids[col]# assigning new centroid
-				self.disappeared[objectID] = 0 # updating disappeared status
+				self.objecdict[objectID] = inputCentroids[col]# assigning new centroid
+				self.disapp[objectID] = 0 # updating disapp status
 
 				# get the list of 
-				usedRows.add(row)
-				usedCols.add(col)
+				usedObjectRow.add(row)
+				usedObjectCols.add(col)
 
-			# some objects have disappeared, That is being captured in this 
-			unusedRows = set(range(0, D.shape[0])).difference(usedRows)
-			unusedCols = set(range(0, D.shape[1])).difference(usedCols)
+			# some objecdict have disapp, That is being captured in this 
+			unusedRowobj = set(range(0, Distance.shape[0])).difference(usedObjectRow)
+			unusedColobj = set(range(0, Distance.shape[1])).difference(usedObjectCols)
 
-			# Some objects are missing
-			if D.shape[0] >= D.shape[1]:
+			# Some objecdict are missing
+			if Distance.shape[0] >= Distance.shape[1]:
 
-				for row in unusedRows:#loop over the disappeared status
+				for row in unusedRowobj:#loop over the disapp status
 			        
 					objectID = objectIDs[row]
-					self.disappeared[objectID] += 1 #updating the disappearence status
+					self.disapp[objectID] += 1 #updating the disappearence status
 
-					if self.disappeared[objectID] > self.maxDisappeared: # if greater than threshold deregister the object
-						self.deregister(objectID)
+					if self.disapp[objectID] > self.maxdisapp: # if greater than threshold deregister the object
+						self.deregisteing(objectID)
 
 			else:
-				for col in unusedCols: # loop over unregistered object
-					self.register(inputCentroids[col])
+				for col in unusedColobj: # loop over unregistered object
+					self.registering(inputCentroids[col])
 
-		# return the set of trackable objects
-		return self.objects
+		# return the set of trackable objecdict
+		return self.objecdict

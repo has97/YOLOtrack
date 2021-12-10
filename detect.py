@@ -4,9 +4,6 @@ import argparse
 import sys
 import numpy as np
 import os.path
-# from deep_sort import nn_matching
-# from deep_sort.detection import Detection
-# from deep_sort.tracker import Tracker
 
 # Initialize the parameters
 confThreshold = 0.5 #Confidence threshold
@@ -24,13 +21,8 @@ modelWeights = "./yolov4.weights";
 net = cv.dnn.readNetFromDarknet(modelConfiguration, modelWeights)
 net.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
-# metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-# tracker = Tracker(metric)
-#initialize variable for use in count_frames_manualred
 
-#define function for counting number of frames each objectID is in 
 
-# Get the names of the output layers
 def getOutputsNames(net):
     # Get the names of all the layers in the network
     layersNames = net.getLayerNames()
@@ -70,11 +62,6 @@ def postprocess(frame, outs):
                         classIds.append(classId)
                         confidences.append(float(confidence))
                         boxes.append([left, top, width, height])
-                    # drawPred(classIds, confidences, left, top, left + width, top + height)
-                    # rects.append([left, top, left + width, top + height])
-            
-    # Perform non maximum suppression to eliminate redundant overlapping boxes with
-    # lower confidences.
     indices = cv.dnn.NMSBoxes(boxes, confidences, confThreshold, nmsThreshold)
     for i in indices:
         i = i
@@ -87,27 +74,12 @@ def postprocess(frame, outs):
         rects.append([left, top, left + width, top + height])
         
     objects = ct.update(rects)
-    # # tracker.predict()
-    # # tracker.update(detections)
-	# # loop over the tracked objects
     for (objectID, centroid, ) in objects.items():
    
         text = "ID {}".format(objectID)
         
         cv.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
-    # for track in tracker.tracks:
-    #         if not track.is_confirmed() or track.time_since_update > 1:
-    #             continue 
-    #         bbox = track.to_tlbr()
-    #         class_name = track.get_class()
-            
-    #     # draw bbox on screen
-    #         color = colors[int(track.track_id) % len(colors)]
-    #         color = [i * 255 for i in color]
-    #         cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-    #         cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
-    #         cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
               
             
 # Process inputs
